@@ -305,22 +305,13 @@ class MyWindow(arcade.Window):
         px: x position of the brush.
         py: y position of the brush.
         """
-        self.layer = layer
-        self.px = px
-        self.py = py
-        self.brush_size = self.grid.brush_size
-        # what shape is the brush painting, is it a block or a cross? what should be painted if brush size is 2?
-        self.grid[px][py].add(self.layer)
-        for i in range(max(self.px - self.brush_size + 1, 0), min(self.px + self.brush_size, MyWindow.GRID_SIZE_X)):
-            self.grid[i][py].add(self.layer)
-        for j in range(max(self.py - self.brush_size + 1, 0), min(self.py + self.brush_size, MyWindow.GRID_SIZE_Y)):
-            self.grid[px][j].add(self.layer)
 
-        #if self.brush_size > 1:
-         #   for i in range(max(self.px - (self.brush_size - 1), 0), min(self.px + (self.brush_size - 1), MyWindow.GRID_SIZE_X)):
-          #      for j in range(max(self.py - (self.brush_size - 1), 0), min(self.py + (self.brush_size - 1), MyWindow.GRID_SIZE_Y)):
-           #         self.grid[i][j].add(self.layer)
-        # pass
+        brush_size = self.grid.brush_size
+
+        for i in range(max(px - brush_size, 0), min(px + brush_size + 1, MyWindow.GRID_SIZE_X)):
+            for j in range(max(py - brush_size, 0), min(py + brush_size + 1, MyWindow.GRID_SIZE_Y)):
+                if abs(i - px) + abs(j - py) <= brush_size:
+                    self.grid[i][j].add(layer)
 
     def on_undo(self):
         """Called when an undo is requested."""
