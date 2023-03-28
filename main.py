@@ -1,6 +1,8 @@
 import arcade
 import arcade.key as keys
 import math
+
+import undo
 from grid import Grid
 from layer_util import get_layers, Layer
 from layers import lighten
@@ -315,11 +317,11 @@ class MyWindow(arcade.Window):
 
     def on_undo(self):
         """Called when an undo is requested."""
-        pass
+        undo.UndoTracker.undo(self.grid)
 
     def on_redo(self):
         """Called when a redo is requested."""
-        pass
+        undo.UndoTracker.redo(self.grid)
 
     def on_special(self):
         """Called when the special action is requested."""

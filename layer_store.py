@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
-import layers
+from data_structures.queue_adt import CircularQueue
+from data_structures.stack_adt import ArrayStack
+from data_structures.array_sorted_list import ArraySortedList
+from data_structures.bset import BSet
 from layer_util import Layer
 from layer_util import get_layers
-from data_structures.stack_adt import ArrayStack, Stack
-from data_structures.queue_adt import CircularQueue, Queue
 from layers import *
 
 
@@ -75,7 +77,10 @@ class SetLayerStore(LayerStore):
 
     def erase(self, layer: Layer) -> bool:
         # can pop since there should be only 1 item in the stack
-        self.stack.pop()
+        if self.stack.is_empty():
+            return self.stack.is_empty()
+        else:
+            self.stack.pop()
         return self.stack.is_empty()
 
     def special(self):
@@ -200,20 +205,36 @@ class SequenceLayerStore(LayerStore):
         Of all currently applied layers, remove the one with median `name`.
         In the event of two layers being the median names, pick the lexicographically smaller one.
     """
+
     def __init__(self):
         super().__init__()
+        self.max_size = len(get_layers())
+        self.sorted_list = ArraySortedList(self.max_size * 100)
+        # sorted list
+        # if a layer is just on or off, does that mean there are no duplicates? -> set NO tutor said pop
 
     def add(self, layer: Layer) -> bool:
-        pass
+        self.sorted_list[layer.index] = layer
 
     def erase(self, layer: Layer) -> bool:
-        pass
+        layer_to_erase = self.sorted_list.index(layer)
+        self.sorted_list.delete_at_index(layer_to_erase)
 
     def special(self):
         pass
 
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
-        pass
+        colour = start
 
+        # looping through length(self.queue)
+        count = 0
+        while count < self.sorted_list.length:
+            # layer = serve() first element -> Layer
+            layer = self.sorted_list[count]
 
+            # colour = layer.apply(colour, timestamp, x, y)
+            colour = layer.apply(colour, timestamp, x, y)
 
+            count += 1
+
+        return colour
