@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from data_structures.queue_adt import CircularQueue
 from data_structures.stack_adt import ArrayStack
 from data_structures.array_sorted_list import ArraySortedList
+from data_structures.sorted_list_adt import ListItem
 from data_structures.bset import BSet
 from layer_util import Layer
 from layer_util import get_layers
@@ -158,8 +159,8 @@ class AdditiveLayerStore(LayerStore):
 
     def special(self):
         # copied and pasted from ed forums
-        my_stack = ArrayStack(len(self.queue))  # used to reverse
-        result_queue = CircularQueue(len(self.queue))  # used for computing the result
+        my_stack = ArrayStack(self.max_size * 100)  # used to reverse
+        result_queue = CircularQueue(self.max_size * 100)  # used for computing the result
 
         for _ in range(len(self.queue)):
             item = self.queue.serve()
@@ -210,18 +211,44 @@ class SequenceLayerStore(LayerStore):
         super().__init__()
         self.max_size = len(get_layers())
         self.sorted_list = ArraySortedList(self.max_size * 100)
-        # sorted list
-        # if a layer is just on or off, does that mean there are no duplicates? -> set NO tutor said pop
+        self.special_sorted_list = ArraySortedList(self.max_size * 100)
 
     def add(self, layer: Layer) -> bool:
-        self.sorted_list[layer.index] = layer
+        # key is layer.index
+        key = layer.index
+        # list item of layer and layer.index
+        list_item = ListItem(layer, key)
+
+        self.sorted_list.add(list_item)
 
     def erase(self, layer: Layer) -> bool:
-        layer_to_erase = self.sorted_list.index(layer)
-        self.sorted_list.delete_at_index(layer_to_erase)
+        # .remove from sorted_list_adt
+        key = layer.index
+        list_item = ListItem(layer, key)
+        if self.sorted_list.__contains__(list_item):
+            self.sorted_list.remove(list_item)
 
     def special(self):
-        pass
+        # look at array sorted list (sorted by index currently)
+        # dont change original one
+        # add another sorted list of layers of the applied layers but these are alphabetically sorted
+        # use layer.name as the key
+
+        for i in range(self.sorted_list.length):
+            list_item = self.sorted_list[i]
+            value = list_item.value
+            key = value.name
+            list_item_special = ListItem(value, key)
+            self.special_sorted_list.add(list_item_special)
+
+        if self.special_sorted_list.length % 2 == 1:
+            index = self.special_sorted_list.length // 2
+            self.special_sorted_list.delete_at_index(index)
+        else:
+            index = (self.special_sorted_list.length // 2) - 1
+            self.special_sorted_list.delete_at_index(index)
+
+        self.sorted_list = self.special_sorted_list
 
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
         colour = start
@@ -230,7 +257,9 @@ class SequenceLayerStore(LayerStore):
         count = 0
         while count < self.sorted_list.length:
             # layer = serve() first element -> Layer
-            layer = self.sorted_list[count]
+            list_item = self.sorted_list[count]
+
+            layer = list_item.value
 
             # colour = layer.apply(colour, timestamp, x, y)
             colour = layer.apply(colour, timestamp, x, y)

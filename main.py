@@ -2,7 +2,7 @@ import arcade
 import arcade.key as keys
 import math
 
-import undo
+from undo import UndoTracker
 from grid import Grid
 from layer_util import get_layers, Layer
 from layers import lighten
@@ -317,10 +317,20 @@ class MyWindow(arcade.Window):
 
     def on_undo(self):
         """Called when an undo is requested."""
-        undo.UndoTracker.undo(self.grid)
+        undo_instance = UndoTracker()
+        print(undo_instance.__dict__)
+        print(self.grid.__dict__)
+        undo_instance.undo(self.grid)
+
+        # undo.UndoTracker.undo(self.grid)
+
+        # hard code test case,
+        # if both fail code is wrong
+        # if one fails - connection between code and game interface isnt working
 
     def on_redo(self):
         """Called when a redo is requested."""
+
         undo.UndoTracker.redo(self.grid)
 
     def on_special(self):
