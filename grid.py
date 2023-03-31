@@ -62,9 +62,21 @@ class Grid:
         Increases the size of the brush by 1,
         if the brush size is already MAX_BRUSH,
         then do nothing.
+        Args:
+            - No arguments
+
+        Raises:
+            - Exception: if brush size is equal to max brush size
+
+        Returns:
+            None
+
+        Complexity:
+            Best: O(1)
+            Worst: O(1)
         """
         if self.brush_size == Grid.MAX_BRUSH:
-            pass
+            raise Exception("Brush size already max")
         else:
             self.brush_size += 1
 

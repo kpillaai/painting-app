@@ -2,10 +2,12 @@ import arcade
 import arcade.key as keys
 import math
 
+from replay import ReplayTracker
 from undo import UndoTracker
 from grid import Grid
 from layer_util import get_layers, Layer
 from layers import lighten
+from action import PaintAction, PaintStep
 
 
 class MyWindow(arcade.Window):
@@ -292,7 +294,8 @@ class MyWindow(arcade.Window):
 
     def on_init(self):
         """Initialisation that occurs after the system initialisation."""
-        pass
+        self.undo_tracker = UndoTracker()
+        self.replay_tracker = ReplayTracker()
 
     def on_reset(self):
         """Called when a window reset is requested."""
@@ -309,36 +312,34 @@ class MyWindow(arcade.Window):
         """
 
         brush_size = self.grid.brush_size
-
-        for i in range(max(px - brush_size, 0), min(px + brush_size + 1, MyWindow.GRID_SIZE_X)):
-            for j in range(max(py - brush_size, 0), min(py + brush_size + 1, MyWindow.GRID_SIZE_Y)):
+        paint_action = PaintAction()
+        for i in range(max(px - brush_size, 0), min(px + brush_size + 1, self.grid.x)):
+            for j in range(max(py - brush_size, 0), min(py + brush_size + 1, self.grid.y)):
                 if abs(i - px) + abs(j - py) <= brush_size:
                     self.grid[i][j].add(layer)
+                    step = PaintStep((i, j), layer)
+                    paint_action.add_step(step)
+
+        self.undo_tracker.add_action(paint_action)
+        self.replay_tracker.add_action(paint_action, False)
 
     def on_undo(self):
         """Called when an undo is requested."""
-        undo_instance = UndoTracker()
-        print(undo_instance.__dict__)
-        print(self.grid.__dict__)
-        undo_instance.undo(self.grid)
-
-        # undo.UndoTracker.undo(self.grid)
-
-        # hard code test case,
-        # if both fail code is wrong
-        # if one fails - connection between code and game interface isnt working
+        action = self.undo_tracker.undo(self.grid)
+        self.replay_tracker.add_action(action, True)
 
     def on_redo(self):
         """Called when a redo is requested."""
-
-        undo.UndoTracker.redo(self.grid)
+        self.undo_tracker.redo(self.grid)
 
     def on_special(self):
         """Called when the special action is requested."""
         self.grid.special()
 
+
     def on_replay_start(self):
         """Called when the replay starting is requested."""
+        #
         pass
 
     def on_replay_next_step(self) -> bool:
@@ -346,7 +347,8 @@ class MyWindow(arcade.Window):
         Called when the next step of the replay is requested.
         Returns whether the replay is finished.
         """
-        return True
+        self.replay_tracker.play_next_action(self.grid)
+        return self.replay_tracker.play_next_action(self.grid)
 
     def on_increase_brush_size(self):
         """Called when an increase to the brush size is requested."""

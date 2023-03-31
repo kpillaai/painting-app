@@ -62,31 +62,21 @@ class SetLayerStore(LayerStore):
         self.special_bool = False
 
     def add(self, layer: Layer) -> bool:
-        self.layer = layer  # should this be in init?
-        # initialise an adt that can store 1 object, stack of length 1?
-
-        # add layer to stack
         if self.stack.is_full():
             self.stack.pop()
-            self.stack.push(self.layer)
+            self.stack.push(layer)
         else:
-            self.stack.push(self.layer)
-
-        # need to return true if the LayerStore was actually changed
-        # how to know if the layer store was changed?
-        # could peek, store previous colour somewhere, add
+            self.stack.push(layer)
 
     def erase(self, layer: Layer) -> bool:
-        # can pop since there should be only 1 item in the stack
         if self.stack.is_empty():
             return self.stack.is_empty()
         else:
             self.stack.pop()
+
         return self.stack.is_empty()
 
     def special(self):
-        # applies the colour and then invert it? - wed app opt
-        # needs to change the way get colour works? - wed app opt
         """
         Keeps the current layer, but always applies an inversion of the colours after the layer has been applied
         """
@@ -103,25 +93,22 @@ class SetLayerStore(LayerStore):
         """
         Returns the colour this square should show, given the current layers.
         """
-        self.start = start  # 3 int tuple that is a colour
-        self.timestamp = timestamp
-        self.x = x
-        self.y = y
-
-        # take the layer stored in self.stack
-        # put self.start into that layer, return result
-        if self.stack.is_empty():
-            return self.start
 
         if not self.special_bool:
-            self.layer_peek = self.stack.peek()
-            self.colour = self.layer_peek.apply(self.start, self.timestamp, self.x, self.y)
+            if self.stack.is_empty():
+                return start
+            else:
+                layer_peek = self.stack.peek()
+                colour = layer_peek.apply(start, timestamp, x, y)
         elif self.special_bool:
-            self.layer_peek = self.stack.peek()
-            self.current_color = self.layer_peek.apply(self.start, self.timestamp, self.x, self.y)
-            self.colour = invert.apply(self.current_color, self.timestamp, self.x, self.y)
+            if self.stack.is_empty():
+                colour = invert.apply(start, timestamp, x, y)
+            else:
+                layer_peek = self.stack.peek()
+                current_color = layer_peek.apply(start, timestamp, x, y)
+                colour = invert.apply(current_color, timestamp, x, y)
 
-        return self.colour
+        return colour
 
 
 class AdditiveLayerStore(LayerStore):
@@ -142,8 +129,8 @@ class AdditiveLayerStore(LayerStore):
         Add a layer to the store.
         Returns true if the LayerStore was actually changed.
         """
-        self.layer = layer
-        self.queue.append(self.layer)
+        # self.layer = layer
+        self.queue.append(layer)
 
         # check if queue is full?
 
@@ -153,9 +140,9 @@ class AdditiveLayerStore(LayerStore):
         Returns true if the LayerStore was actually changed.
         Erasing from an Additive Layer always removes the oldest remaining layer (first element)
         """
-        self.queue_length = len(self.queue)  # should this be self.queue.length
+        queue_length = self.queue.length  # should this be self.queue.length
         self.queue.serve()
-        return self.queue_length == len(self.queue) + 1  # returns true if length of queue has decreased by 1
+        return queue_length == self.queue.length + 1  # returns true if length of queue has decreased by 1
 
     def special(self):
         # copied and pasted from ed forums
@@ -211,7 +198,6 @@ class SequenceLayerStore(LayerStore):
         super().__init__()
         self.max_size = len(get_layers())
         self.sorted_list = ArraySortedList(self.max_size * 100)
-        self.special_sorted_list = ArraySortedList(self.max_size * 100)
 
     def add(self, layer: Layer) -> bool:
         # key is layer.index
@@ -225,30 +211,36 @@ class SequenceLayerStore(LayerStore):
         # .remove from sorted_list_adt
         key = layer.index
         list_item = ListItem(layer, key)
-        if self.sorted_list.__contains__(list_item):
-            self.sorted_list.remove(list_item)
+        for i in self.sorted_list:
+            if self.sorted_list.__contains__(list_item):
+                self.sorted_list.remove(list_item)
 
     def special(self):
-        # look at array sorted list (sorted by index currently)
-        # dont change original one
-        # add another sorted list of layers of the applied layers but these are alphabetically sorted
-        # use layer.name as the key
+        special_sorted_list = ArraySortedList(self.max_size * 100)
 
         for i in range(self.sorted_list.length):
             list_item = self.sorted_list[i]
             value = list_item.value
             key = value.name
             list_item_special = ListItem(value, key)
-            self.special_sorted_list.add(list_item_special)
+            special_sorted_list.add(list_item_special)
 
-        if self.special_sorted_list.length % 2 == 1:
-            index = self.special_sorted_list.length // 2
-            self.special_sorted_list.delete_at_index(index)
+        if special_sorted_list.length % 2 == 1:
+            index = special_sorted_list.length // 2
+            # get item at index, item_to_delete is a ListItem
+            item_to_delete = special_sorted_list[index]
+
         else:
-            index = (self.special_sorted_list.length // 2) - 1
-            self.special_sorted_list.delete_at_index(index)
+            index = (special_sorted_list.length // 2) - 1
+            item_to_delete = special_sorted_list[index]
 
-        self.sorted_list = self.special_sorted_list
+        # new_value should be a Layer from the item_to_delete ListItem
+        new_value = item_to_delete.value
+        # new_key should be the unique index of the Layer
+        new_key = new_value.index
+        new_list_item = ListItem(new_value, new_key)
+        new_index = self.sorted_list.index(new_list_item)
+        self.sorted_list.delete_at_index(new_index)
 
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
         colour = start
