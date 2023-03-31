@@ -1,13 +1,28 @@
 from __future__ import annotations
+
 from action import PaintAction
-from grid import Grid
-from data_structures.queue_adt import CircularQueue
 from data_structures.stack_adt import ArrayStack
+from grid import Grid
 
 
 class UndoTracker:
 
     def __init__(self):
+        """
+        Initialises an action and redo Array Stack of length max_actions
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(max_capacity), where max_capacity is the max_actions
+            Worst: O(max_capacity), same as best
+        """
         max_actions = 10000
         self.action_stack = ArrayStack(max_actions)
         self.redo_stack = ArrayStack(max_actions)
@@ -18,9 +33,22 @@ class UndoTracker:
 
         If your collection is already full,
         feel free to exit early and not add the action.
+        Args:
+            - action: an object of type PaintAction
+
+        Raises:
+            - Type Error: if action is not of Type PaintAction
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(1), is_full and push are both constant
+            Worst: O(1), same as best
         """
-        # initialise ADT of size 10000
-        # check if ADT is full, if yes then break, if not add action to the adt
+        if not isinstance(action, PaintAction):
+            raise TypeError("grid input is not of type Grid")
+
         if self.action_stack.is_full():
             pass
         else:
@@ -30,9 +58,23 @@ class UndoTracker:
         """
         Undo an operation, and apply the relevant action to the grid.
         If there are no actions to undo, simply do nothing.
+        Args:
+            - grid: an object of type Grid
 
-        :return: The action that was undone, or None.
+        Raises:
+            - Type Error: if grid is not of type Grid
+
+        Returns:
+            - The action that was undone, or None
+
+        Complexity:
+            Best: O(undo_apply), all other operations are constant so will be dominated by undo_apply which will be
+            constant or greater
+            Worst: O(undo_apply), same as best
         """
+        if not isinstance(grid, Grid):
+            raise TypeError("grid input is not of type Grid")
+
         # checking if stack of PaintActions is empty, if yes return None
         if self.action_stack.is_empty():
             return None
@@ -57,9 +99,23 @@ class UndoTracker:
         """
         Redo an operation that was previously undone.
         If there are no actions to redo, simply do nothing.
+        Args:
+            - grid: an object of type Grid
 
-        :return: The action that was redone, or None.
+        Raises:
+            - Type Error: if grid is not of type Grid
+
+        Returns:
+            - The action that was redone, or None
+
+        Complexity:
+            Best: O(redo_apply), all other operations are constant so will be dominated by undo_apply which will be
+            constant or greater
+            Worst: O(redo_apply), same as best
         """
+        if not isinstance(grid, Grid):
+            raise TypeError("grid input is not of type Grid")
+
         # check if stack of PaintActions is empty, if yes return None
         if self.redo_stack.is_empty():
             return None

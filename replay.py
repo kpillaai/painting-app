@@ -5,7 +5,23 @@ from data_structures.queue_adt import CircularQueue
 
 
 class ReplayTracker:
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialises replay and bool circular queues of size max_actions to track the replays to be done and whether
+        they are undos or not
+        Args:
+            - No arguments
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(max_capacity), where max_capacity is max_actions, based on ArrayR
+            Worst: O(max_capacity), same as best
+        """
         max_actions = 10000
         self.replay_queue = CircularQueue(max_actions)
         self.bool_tracker = CircularQueue(max_actions)
@@ -16,16 +32,30 @@ class ReplayTracker:
 
         Useful if you have any setup to do before `play_next_action` should be called.
         """
-        # for loop calling
+
         pass
 
     def add_action(self, action: PaintAction, is_undo: bool = False) -> None:
         """
         Adds an action to the replay.
+        Args:
+            - action: an object of type PaintAction
+            - is_undo: a bool specifying whether the action was an undo action or not. Special, Redo, and Draw all
+            have this is False.
 
-        `is_undo` specifies whether the action was an undo action or not.
-        Special, Redo, and Draw all have this is False.
+        Raises:
+            - Type Error: if action is not of Type PaintAction
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(1), append and is_full are both constant
+            Worst: O(1), same as best
         """
+        if not isinstance(action, PaintAction):
+            raise TypeError("action input is not of type PaintAction")
+
         if self.replay_queue.is_full():
             pass
         else:
@@ -35,12 +65,23 @@ class ReplayTracker:
     def play_next_action(self, grid: Grid) -> bool:
         """
         Plays the next replay action on the grid.
-        Returns a boolean.
-            - If there were no more actions to play, and so nothing happened, return True.
-            - Otherwise, return False.
+        Args:
+            - grid: a Grid object
+
+        Raises:
+            - Type Error: if grid is not of type Grid
+
+        Returns:
+            - bool: If there were no more actions to play, and so nothing happened, return True. Otherwise, return
+            False.
+
+        Complexity:
+            Best: O(n), where n is the greater complexity of redo_apply and undo_apply
+            Worst: O(n), where n is the greater complexity of redo_apply and undo_apply
         """
-        # if the queue is empty returns true, no more actions to play in the queue
-        # otherwise return false
+        if not isinstance(grid, Grid):
+            raise TypeError("grid input is not of type Grid")
+
         if self.replay_queue.is_empty():
             self.replay_queue.clear()
             return True
@@ -53,10 +94,6 @@ class ReplayTracker:
                 action.undo_apply(grid)
 
             return False
-
-        # have a for loop looping through while play_next_action is false
-        # while not play_next_action(self.grid):
-        #    play_next_action(self.grid)
 
 
 if __name__ == "__main__":

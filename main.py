@@ -330,16 +330,16 @@ class MyWindow(arcade.Window):
 
     def on_redo(self):
         """Called when a redo is requested."""
-        self.undo_tracker.redo(self.grid)
+        action = self.undo_tracker.redo(self.grid)
+        self.replay_tracker.add_action(action, False)
 
     def on_special(self):
         """Called when the special action is requested."""
         self.grid.special()
-
+        # self.replay_tracker.add_action(action, False)
 
     def on_replay_start(self):
         """Called when the replay starting is requested."""
-        #
         pass
 
     def on_replay_next_step(self) -> bool:
