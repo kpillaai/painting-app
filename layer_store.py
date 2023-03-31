@@ -353,7 +353,7 @@ class SequenceLayerStore(LayerStore):
         In the event of two layers being the median names, pick the lexicographically smaller one.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialises an ArraySortedList
         Args:
@@ -421,7 +421,7 @@ class SequenceLayerStore(LayerStore):
                 self.sorted_list.remove(erase_list_item)
         return self.sorted_list.__contains__(erase_list_item)
 
-    def special(self):
+    def special(self) -> None:
         """
         Deletes the median layer of the lexicographically sorted currently applying layers
         Args:

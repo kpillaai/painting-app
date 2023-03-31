@@ -292,8 +292,22 @@ class MyWindow(arcade.Window):
 
     # STUDENT PART
 
-    def on_init(self):
-        """Initialisation that occurs after the system initialisation."""
+    def on_init(self) -> None:
+        """
+        Initialisation that occurs after the system initialisation
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(max_capacity), max capacity of undo or replay tracker (both same)
+            Worst: O(max_capacity)
+        """
         self.undo_tracker = UndoTracker()
         self.replay_tracker = ReplayTracker()
 
@@ -301,14 +315,26 @@ class MyWindow(arcade.Window):
         """Called when a window reset is requested."""
         pass
 
-    def on_paint(self, layer: Layer, px, py):
+    def on_paint(self, layer: Layer, px, py) -> None:
         """
         Called when a grid square is clicked on, which should trigger painting in the vicinity.
-        Vicinity squares outside of the range [0, GRID_SIZE_X) or [0, GRID_SIZE_Y) can be safely ignored.
+        Vicinity squares outside of the range [0, GRID_SIZE_X) or [0, GRID_SIZE_Y) can be safely ignored
+        Args:
+            - layer: The layer being applied.
+            - px: x position of the brush.
+            - py: y position of the brush.
 
-        layer: The layer being applied.
-        px: x position of the brush.
-        py: y position of the brush.
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(n*m*(add, paintstep, add_step)), where n is the the x axis range, m is the y axis range, add is the
+            complexity of the add function depending on the layer store, paintstep is the complexity of the paint step
+            initialisation and add_step is the complexity of the add_step method
+            Worst: O(n*m*(add, paintstep, add_step)), same as best
         """
 
         brush_size = self.grid.brush_size
@@ -323,18 +349,61 @@ class MyWindow(arcade.Window):
         self.undo_tracker.add_action(paint_action)
         self.replay_tracker.add_action(paint_action, False)
 
-    def on_undo(self):
-        """Called when an undo is requested."""
+    def on_undo(self) -> None:
+        """
+        Called when an undo is requested
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(undo_apply), which is the complexity of the undo method
+            Worst: O(undo_apply), same as best
+        """
         action = self.undo_tracker.undo(self.grid)
         self.replay_tracker.add_action(action, True)
 
-    def on_redo(self):
-        """Called when a redo is requested."""
+    def on_redo(self) -> None:
+        """
+        Called when a redo is requested
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(redo_apply), which is the complexity of the redo method
+            Worst: O(redo_apply), same as best
+        """
         action = self.undo_tracker.redo(self.grid)
         self.replay_tracker.add_action(action, False)
 
-    def on_special(self):
-        """Called when the special action is requested."""
+    def on_special(self) -> None:
+        """
+        Called when the special action is requested
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(special), where special is the complexity of the special function depending on which layer store is
+            selected
+            Worst: O(special), same as best
+        """
         self.grid.special()
         # self.replay_tracker.add_action(action, False)
 
@@ -345,17 +414,58 @@ class MyWindow(arcade.Window):
     def on_replay_next_step(self) -> bool:
         """
         Called when the next step of the replay is requested.
-        Returns whether the replay is finished.
+        Args:
+            - No arguments
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - bool: Returns whether the replay is finished.
+
+        Complexity:
+            Best: O(n), which is the complexity of play_next_action, where n is the greater complexity of redo_apply
+            and undo_apply
+            Worst: O(n), which is the complexity of play_next_action, where n is the greater complexity of redo_apply
+            and undo_apply
         """
         self.replay_tracker.play_next_action(self.grid)
         return self.replay_tracker.play_next_action(self.grid)
 
-    def on_increase_brush_size(self):
-        """Called when an increase to the brush size is requested."""
+    def on_increase_brush_size(self) -> None:
+        """
+        Called when an increase to the brush size is requested
+        Args:
+            - No arguments
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(1), the complexity of increase_brush_size
+            Worst: O(1), same as best
+        """
         self.grid.increase_brush_size()
 
-    def on_decrease_brush_size(self):
-        """Called when a decrease to the brush size is requested."""
+    def on_decrease_brush_size(self) -> None:
+        """
+        Called when a decrease to the brush size is requested
+        Args:
+            - No arguments
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(1), the complexity of decrease_brush_size
+            Worst: O(1), same as best
+        """
         self.grid.decrease_brush_size()
 
 
