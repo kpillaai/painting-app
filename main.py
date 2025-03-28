@@ -1,9 +1,14 @@
 import arcade
 import arcade.key as keys
 import math
+
+from replay import ReplayTracker
+from undo import UndoTracker
 from grid import Grid
 from layer_util import get_layers, Layer
 from layers import lighten
+from action import PaintAction, PaintStep
+
 
 class MyWindow(arcade.Window):
     """ Painter Window """
@@ -60,35 +65,35 @@ class MyWindow(arcade.Window):
             "img/on_off.png" if self.draw_style == Grid.DRAW_STYLE_SET else (
                 "img/additive.png" if self.draw_style == Grid.DRAW_STYLE_ADD else "img/sequence.png"
             ),
-            scale=50/48,
+            scale=50 / 48,
         )
         self.draw_mode_button.center_x = self.DRAW_PANEL + self.LAYER_BUTTON_SIZE / 2
         self.draw_mode_button.center_y = self.LAYER_BUTTON_SIZE / 2
         self.action_buttons.append(self.draw_mode_button)
         self.replay_button = arcade.Sprite(
             "img/replay.png",
-            scale=50/48,
+            scale=50 / 48,
         )
         self.replay_button.center_x = self.DRAW_PANEL + 3 * self.LAYER_BUTTON_SIZE / 2
         self.replay_button.center_y = self.LAYER_BUTTON_SIZE / 2
         self.action_buttons.append(self.replay_button)
         self.brush_big_button = arcade.Sprite(
             "img/brush_up.png",
-            scale=50/48,
+            scale=50 / 48,
         )
         self.brush_big_button.center_x = self.DRAW_PANEL + self.LAYER_BUTTON_SIZE / 2
         self.brush_big_button.center_y = 3 * self.LAYER_BUTTON_SIZE / 2
         self.action_buttons.append(self.brush_big_button)
         self.brush_small_button = arcade.Sprite(
             "img/brush_down.png",
-            scale=50/48,
+            scale=50 / 48,
         )
         self.brush_small_button.center_x = self.DRAW_PANEL + 3 * self.LAYER_BUTTON_SIZE / 2
         self.brush_small_button.center_y = 3 * self.LAYER_BUTTON_SIZE / 2
         self.action_buttons.append(self.brush_small_button)
         self.special_button = arcade.Sprite(
             "img/special.png",
-            scale=50/48,
+            scale=50 / 48,
         )
         self.special_button.center_x = self.DRAW_PANEL + self.LAYER_BUTTON_SIZE / 2
         self.special_button.center_y = 5 * self.LAYER_BUTTON_SIZE / 2
@@ -107,17 +112,19 @@ class MyWindow(arcade.Window):
         for i, layer in enumerate(get_layers()):
             if layer is None: break
             xstart = (i % 2) * self.LAYER_BUTTON_SIZE + self.DRAW_PANEL
-            xend = ((i % 2)+1) * self.LAYER_BUTTON_SIZE + self.DRAW_PANEL
-            ystart = self.SCREEN_HEIGHT - (i//2) * self.LAYER_BUTTON_SIZE
-            yend = self.SCREEN_HEIGHT - (i//2+1) * self.LAYER_BUTTON_SIZE
-            bg = lighten.apply(layer.bg or self.BG[:], 0, 0, 0) if self.selected_layer_index == i else (layer.bg or self.BG[:])
+            xend = ((i % 2) + 1) * self.LAYER_BUTTON_SIZE + self.DRAW_PANEL
+            ystart = self.SCREEN_HEIGHT - (i // 2) * self.LAYER_BUTTON_SIZE
+            yend = self.SCREEN_HEIGHT - (i // 2 + 1) * self.LAYER_BUTTON_SIZE
+            bg = lighten.apply(layer.bg or self.BG[:], 0, 0, 0) if self.selected_layer_index == i else (
+                    layer.bg or self.BG[:])
             if not self.enable_ui:
                 bg = lighten.apply(bg, 0, 0, 0)
             arcade.draw_lrtb_rectangle_filled(xstart, xend, ystart, yend, bg)
             arcade.draw_lrtb_rectangle_outline(
                 xstart, xend, ystart, yend, (0, 0, 0), border_width=1,
             )
-            arcade.draw_text(str(i), xstart, (ystart+yend)/2, (0, 0, 0), 18, width=xend-xstart, align="center", bold=True, anchor_y="center")
+            arcade.draw_text(str(i), xstart, (ystart + yend) / 2, (0, 0, 0), 18, width=xend - xstart, align="center",
+                             bold=True, anchor_y="center")
         # UI - Draw Modes / Action buttons
         self.action_buttons.draw()
         # Grid
@@ -125,8 +132,8 @@ class MyWindow(arcade.Window):
             for y in range(self.GRID_SIZE_Y):
                 arcade.draw_lrtb_rectangle_filled(
                     self.GRID_SQ_WIDTH * x,
-                    self.GRID_SQ_WIDTH * (x+1),
-                    self.GRID_SQ_HEIGHT * (y+1),
+                    self.GRID_SQ_WIDTH * (x + 1),
+                    self.GRID_SQ_HEIGHT * (y + 1),
                     self.GRID_SQ_HEIGHT * y,
                     self.grid[x][y].get_color(self.BG[:], self.timestamp, x, y),
                 )
@@ -140,9 +147,9 @@ class MyWindow(arcade.Window):
             for i, layer in enumerate(get_layers()):
                 if layer is None: break
                 xstart = (i % 2) * self.LAYER_BUTTON_SIZE + self.DRAW_PANEL
-                xend = ((i % 2)+1) * self.LAYER_BUTTON_SIZE + self.DRAW_PANEL
-                ystart = self.SCREEN_HEIGHT - (i//2) * self.LAYER_BUTTON_SIZE
-                yend = self.SCREEN_HEIGHT - (i//2+1) * self.LAYER_BUTTON_SIZE
+                xend = ((i % 2) + 1) * self.LAYER_BUTTON_SIZE + self.DRAW_PANEL
+                ystart = self.SCREEN_HEIGHT - (i // 2) * self.LAYER_BUTTON_SIZE
+                yend = self.SCREEN_HEIGHT - (i // 2 + 1) * self.LAYER_BUTTON_SIZE
                 if xstart <= x < xend and yend <= y < ystart:
                     self.selected_layer_index = i
                     break
@@ -191,7 +198,7 @@ class MyWindow(arcade.Window):
         """Called when the mouse moves."""
         if not self.dragging:
             return
-        if not(0 <= self.selected_layer_index < len(get_layers())):
+        if not (0 <= self.selected_layer_index < len(get_layers())):
             return
         if x > self.DRAW_PANEL:
             return
@@ -225,7 +232,7 @@ class MyWindow(arcade.Window):
             mhat_dist = abs(x - self.prev_pos[0]) + abs(y - self.prev_pos[1])
             increment = 0.5
             points_to_draw = []
-            for d in range(1, math.ceil(mhat_dist/increment)+1):
+            for d in range(1, math.ceil(mhat_dist / increment) + 1):
                 distance = min(d * increment / mhat_dist, 1)
                 nx = distance * (x - self.prev_pos[0]) + self.prev_pos[0]
                 ny = distance * (y - self.prev_pos[1]) + self.prev_pos[1]
@@ -285,36 +292,120 @@ class MyWindow(arcade.Window):
 
     # STUDENT PART
 
-    def on_init(self):
-        """Initialisation that occurs after the system initialisation."""
-        pass
+    def on_init(self) -> None:
+        """
+        Initialisation that occurs after the system initialisation
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(max_capacity), max capacity of undo or replay tracker (both same)
+            Worst: O(max_capacity)
+        """
+        self.undo_tracker = UndoTracker()
+        self.replay_tracker = ReplayTracker()
 
     def on_reset(self):
         """Called when a window reset is requested."""
         pass
 
-    def on_paint(self, layer: Layer, px, py):
+    def on_paint(self, layer: Layer, px, py) -> None:
         """
         Called when a grid square is clicked on, which should trigger painting in the vicinity.
-        Vicinity squares outside of the range [0, GRID_SIZE_X) or [0, GRID_SIZE_Y) can be safely ignored.
+        Vicinity squares outside of the range [0, GRID_SIZE_X) or [0, GRID_SIZE_Y) can be safely ignored
+        Args:
+            - layer: The layer being applied.
+            - px: x position of the brush.
+            - py: y position of the brush.
 
-        layer: The layer being applied.
-        px: x position of the brush.
-        py: y position of the brush.
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(n*m*(add, paintstep, add_step)), where n is the the x axis range, m is the y axis range, add is the
+            complexity of the add function depending on the layer store, paintstep is the complexity of the paint step
+            initialisation and add_step is the complexity of the add_step method
+            Worst: O(n*m*(add, paintstep, add_step)), same as best
         """
-        pass
 
-    def on_undo(self):
-        """Called when an undo is requested."""
-        pass
+        brush_size = self.grid.brush_size
+        paint_action = PaintAction()
+        for i in range(max(px - brush_size, 0), min(px + brush_size + 1, self.grid.x)):
+            for j in range(max(py - brush_size, 0), min(py + brush_size + 1, self.grid.y)):
+                if abs(i - px) + abs(j - py) <= brush_size:
+                    self.grid[i][j].add(layer)
+                    step = PaintStep((i, j), layer)
+                    paint_action.add_step(step)
 
-    def on_redo(self):
-        """Called when a redo is requested."""
-        pass
+        self.undo_tracker.add_action(paint_action)
+        self.replay_tracker.add_action(paint_action, False)
 
-    def on_special(self):
-        """Called when the special action is requested."""
-        pass
+    def on_undo(self) -> None:
+        """
+        Called when an undo is requested
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(undo_apply), which is the complexity of the undo method
+            Worst: O(undo_apply), same as best
+        """
+        action = self.undo_tracker.undo(self.grid)
+        self.replay_tracker.add_action(action, True)
+
+    def on_redo(self) -> None:
+        """
+        Called when a redo is requested
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(redo_apply), which is the complexity of the redo method
+            Worst: O(redo_apply), same as best
+        """
+        action = self.undo_tracker.redo(self.grid)
+        self.replay_tracker.add_action(action, False)
+
+    def on_special(self) -> None:
+        """
+        Called when the special action is requested
+        Args:
+            - Nothing
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(special), where special is the complexity of the special function depending on which layer store is
+            selected
+            Worst: O(special), same as best
+        """
+        self.grid.special()
+        # self.replay_tracker.add_action(action, False)
 
     def on_replay_start(self):
         """Called when the replay starting is requested."""
@@ -323,23 +414,67 @@ class MyWindow(arcade.Window):
     def on_replay_next_step(self) -> bool:
         """
         Called when the next step of the replay is requested.
-        Returns whether the replay is finished.
-        """
-        return True
+        Args:
+            - No arguments
 
-    def on_increase_brush_size(self):
-        """Called when an increase to the brush size is requested."""
+        Raises:
+            - Nothing
+
+        Returns:
+            - bool: Returns whether the replay is finished.
+
+        Complexity:
+            Best: O(n), which is the complexity of play_next_action, where n is the greater complexity of redo_apply
+            and undo_apply
+            Worst: O(n), which is the complexity of play_next_action, where n is the greater complexity of redo_apply
+            and undo_apply
+        """
+        self.replay_tracker.play_next_action(self.grid)
+        return self.replay_tracker.play_next_action(self.grid)
+
+    def on_increase_brush_size(self) -> None:
+        """
+        Called when an increase to the brush size is requested
+        Args:
+            - No arguments
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(1), the complexity of increase_brush_size
+            Worst: O(1), same as best
+        """
         self.grid.increase_brush_size()
 
-    def on_decrease_brush_size(self):
-        """Called when a decrease to the brush size is requested."""
+    def on_decrease_brush_size(self) -> None:
+        """
+        Called when a decrease to the brush size is requested
+        Args:
+            - No arguments
+
+        Raises:
+            - Nothing
+
+        Returns:
+            - None
+
+        Complexity:
+            Best: O(1), the complexity of decrease_brush_size
+            Worst: O(1), same as best
+        """
         self.grid.decrease_brush_size()
+
 
 def main():
     """ Main function """
     window = MyWindow()
     window.setup()
     arcade.run()
+
 
 def run_with_func(func, pause=False):
     from threading import Thread
